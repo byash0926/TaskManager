@@ -7,12 +7,14 @@ from django.urls import reverse_lazy
 from .models import Task
 from .templates.task.forms import UserForm
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import LoginRequiredMixin
 
 # Create your views here.
 
-class IndexView(generic.ListView):
+class IndexView(LoginRequiredMixin, generic.ListView):
     template_name = 'task/index.html'
     context_object_name = 'all_tasks'
+    login_url = '/login/'
 
     def get_queryset(self):
         return Task.objects.filter(super_task = None, user = self.request.user)
@@ -24,22 +26,32 @@ class IndexView(generic.ListView):
 #     }
 #     return render(request, 'task/index.html', data)
 
-class TaskCreate(CreateView):
+class TaskCreate(LoginRequiredMixin, CreateView):
     model = Task
     fields = ['name', 'description']
+    login_url = '/login/'
 
     def form_valid(self, form):
         object = form.save(commit=False)
         object.user = self.request.user
         return super(TaskCreate, self).form_valid(form)
 
-class TaskUpdate(UpdateView):
+class TaskUpdate(LoginRequiredMixin, UpdateView):
     model = Task
     fields = ['name', 'description']
+    login_url = '/login/'
 
-class TaskDelete(DeleteView):
+    def get_queryset(self):
+        return Task.objects.filter(pk = self.kwargs['pk'], user = self.request.user)
+
+
+class TaskDelete(LoginRequiredMixin, DeleteView):
     model = Task
     success_url = reverse_lazy('task:index')
+    login_url = '/login/'
+
+    def get_queryset(self):
+        return Task.objects.filter(pk = self.kwargs['pk'], user = self.request.user)
 
 class UserFromView(View):
     form_class = UserForm
@@ -89,7 +101,8 @@ class LoginView(View):
 
         return render(request, self.template_name)
 
-@login_required(login_url='/login/')
+
 def logout(request):
-    auth_logout(request)
+    if request.user.is_authenticated:
+        auth_logout(request)
     return redirect('task:login')
