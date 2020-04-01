@@ -1,0 +1,10 @@
+{% extends 'task/base.html' %}
+{% block body %}
+<div class='container'>
+    <form class='form-horizontal' action='' method='post'>
+        {% csrf_token %}
+        {% include 'task/formTemplate.html' %}
+        <button type='submit' class='btn btn-success'>submit</button>
+    </form>
+</div>
+{% endblock  %}
